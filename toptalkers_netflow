@@ -1,0 +1,43 @@
+#!/usr/bin/bash
+#Author:  Steven Yan
+#Date:    April 11 2016
+#Version: 1.0
+#Email: ciscoasa@126.com
+#It tells top 20 talkers based on output of netflow commands from cisco ASR router
+## router(config)# flow monitor NETFLOW-1
+#  router(config)#  description monitor for mpls wan traffic
+#  router(config)#  record netflow ipv4 original-input
+#  router(config)#  cache entries 200000
+#  router(config)# inter a0/3/0.1                  
+#  router(config-if)# ip flow monitor NETFLOW-1 input 
+#  router# show flow monitor NETFLOW-1 cache format table 
+# export the output and named as "output-netflow.txt"
+
+ mkdir stat-netflow
+ cd stat-netflow
+ cp ../output-netflow.txt output-netflow.txt
+ awk '{print $1}' output-netflow.txt >> flow_source.tmp
+ awk '{print $2}' output-netflow.txt >> flow_dest.tmp   
+ sort -u flow_source.tmp > flow_source.samp
+ sort -u flow_dest.tmp   > flow_dest.samp
+ 
+ for i in `cat flow_source.samp`
+  do 
+    CNT=`grep $i flow_source.tmp | wc -l` 
+    printf "%-14d %s\n" $CNT $i >> flow_source.stat
+ done
+
+ for i in `cat flow_dest.samp`
+  do 
+    CNT=`grep $i flow_dest.tmp | wc -l` 
+    printf "%-14d %s\n" $CNT $i >> flow_dest.stat
+ done
+
+ printf "\n## The Top 20 talkers are as per below: \n"
+ cat flow_source.stat | sort -k1nr | head -20
+ printf "\n## The Top 20 nodes which traffic were trying to hit: \n"
+ cat flow_dest.stat | sort -k1nr | head -20
+ rm flow_*
+ printf "\n## Now statistics is over, thank you! ## \n\n"
+ cd ..
+ rm -rf stat-netflow
